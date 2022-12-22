@@ -1,0 +1,36 @@
+Source: node-write-file-atomic
+Section: javascript
+Priority: optional
+Maintainer: Debian Javascript Maintainers <pkg-javascript-devel@lists.alioth.debian.org>
+Uploaders: Aarti Kashyap <kaarti.sr@gmail.com>
+Build-Depends: debhelper-compat (= 13)
+ , node-imurmurhash <!nocheck>
+ , node-is-typedarray <!nocheck>
+ , node-mkdirp <!nocheck>
+ , node-require-inject <!nocheck>
+ , node-rimraf <!nocheck>
+ , node-signal-exit <!nocheck>
+ , node-tap <!nocheck>
+ , node-typedarray-to-buffer <!nocheck>
+ , dh-sequence-nodejs
+Standards-Version: 4.6.0
+Vcs-Browser: https://salsa.debian.org/js-team/node-write-file-atomic
+Vcs-Git: https://salsa.debian.org/js-team/node-write-file-atomic.git
+Homepage: https://github.com/iarna/write-file-atomic
+Testsuite: autopkgtest-pkg-nodejs
+Rules-Requires-Root: no
+
+Package: node-write-file-atomic
+Architecture: all
+Depends: ${misc:Depends}
+ , node-imurmurhash
+ , node-is-typedarray
+ , node-signal-exit
+ , node-typedarray-to-buffer
+ , nodejs
+Provides: ${nodejs:Provides}
+Description: Write files in an atomic fashion w/configurable ownership
+ This is an extension for node's `fs.writeFile` that makes its operation atomic
+ and allows you set ownership (uid/gid of the file).
+ .
+ Node.js is an event-based server-side JavaScript engine.
