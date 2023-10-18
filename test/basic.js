@@ -1,6 +1,5 @@
 'use strict'
-const { test } = require('tap')
-const requireInject = require('require-inject')
+const t = require('tap')
 
 let expectClose = 0
 let closeCalled = 0
@@ -9,23 +8,29 @@ let closeSyncCalled = 0
 const createErr = code => Object.assign(new Error(code), { code })
 
 let unlinked = []
-const writeFileAtomic = requireInject('../index', {
+const writeFileAtomic = t.mock('..', {
   fs: {
     realpath (filename, cb) {
       return cb(null, filename)
     },
     open (tmpfile, options, mode, cb) {
-      if (/noopen/.test(tmpfile)) return cb(createErr('ENOOPEN'))
+      if (/noopen/.test(tmpfile)) {
+        return cb(createErr('ENOOPEN'))
+      }
       expectClose++
       cb(null, tmpfile)
     },
     write (fd) {
       const cb = arguments[arguments.length - 1]
-      if (/nowrite/.test(fd)) return cb(createErr('ENOWRITE'))
+      if (/nowrite/.test(fd)) {
+        return cb(createErr('ENOWRITE'))
+      }
       cb()
     },
     fsync (fd, cb) {
-      if (/nofsync/.test(fd)) return cb(createErr('ENOFSYNC'))
+      if (/nofsync/.test(fd)) {
+        return cb(createErr('ENOFSYNC'))
+      }
       cb()
     },
     close (fd, cb) {
@@ -33,95 +38,145 @@ const writeFileAtomic = requireInject('../index', {
       cb()
     },
     chown (tmpfile, uid, gid, cb) {
-      if (/nochown/.test(tmpfile)) return cb(createErr('ENOCHOWN'))
-      if (/enosys/.test(tmpfile)) return cb(createErr('ENOSYS'))
-      if (/einval/.test(tmpfile)) return cb(createErr('EINVAL'))
-      if (/eperm/.test(tmpfile)) return cb(createErr('EPERM'))
+      if (/nochown/.test(tmpfile)) {
+        return cb(createErr('ENOCHOWN'))
+      }
+      if (/enosys/.test(tmpfile)) {
+        return cb(createErr('ENOSYS'))
+      }
+      if (/einval/.test(tmpfile)) {
+        return cb(createErr('EINVAL'))
+      }
+      if (/eperm/.test(tmpfile)) {
+        return cb(createErr('EPERM'))
+      }
       cb()
     },
     chmod (tmpfile, mode, cb) {
-      if (/nochmod/.test(tmpfile)) return cb(createErr('ENOCHMOD'))
-      if (/enosys/.test(tmpfile)) return cb(createErr('ENOSYS'))
-      if (/eperm/.test(tmpfile)) return cb(createErr('EPERM'))
-      if (/einval/.test(tmpfile)) return cb(createErr('EINVAL'))
+      if (/nochmod/.test(tmpfile)) {
+        return cb(createErr('ENOCHMOD'))
+      }
+      if (/enosys/.test(tmpfile)) {
+        return cb(createErr('ENOSYS'))
+      }
+      if (/eperm/.test(tmpfile)) {
+        return cb(createErr('EPERM'))
+      }
+      if (/einval/.test(tmpfile)) {
+        return cb(createErr('EINVAL'))
+      }
       cb()
     },
     rename (tmpfile, filename, cb) {
-      if (/norename/.test(tmpfile)) return cb(createErr('ENORENAME'))
+      if (/norename/.test(tmpfile)) {
+        return cb(createErr('ENORENAME'))
+      }
       cb()
     },
     unlink (tmpfile, cb) {
-      if (/nounlink/.test(tmpfile)) return cb(createErr('ENOUNLINK'))
+      if (/nounlink/.test(tmpfile)) {
+        return cb(createErr('ENOUNLINK'))
+      }
       cb()
     },
     stat (tmpfile, cb) {
-      if (/nostat/.test(tmpfile)) return cb(createErr('ENOSTAT'))
+      if (/nostat/.test(tmpfile)) {
+        return cb(createErr('ENOSTAT'))
+      }
       cb()
     },
     realpathSync (filename, cb) {
       return filename
     },
     openSync (tmpfile, options) {
-      if (/noopen/.test(tmpfile)) throw createErr('ENOOPEN')
+      if (/noopen/.test(tmpfile)) {
+        throw createErr('ENOOPEN')
+      }
       expectCloseSync++
       return tmpfile
     },
     writeSync (fd) {
-      if (/nowrite/.test(fd)) throw createErr('ENOWRITE')
+      if (/nowrite/.test(fd)) {
+        throw createErr('ENOWRITE')
+      }
     },
     fsyncSync (fd) {
-      if (/nofsync/.test(fd)) throw createErr('ENOFSYNC')
+      if (/nofsync/.test(fd)) {
+        throw createErr('ENOFSYNC')
+      }
     },
     closeSync (fd) {
       closeSyncCalled++
     },
     chownSync (tmpfile, uid, gid) {
-      if (/nochown/.test(tmpfile)) throw createErr('ENOCHOWN')
-      if (/enosys/.test(tmpfile)) throw createErr('ENOSYS')
-      if (/einval/.test(tmpfile)) throw createErr('EINVAL')
-      if (/eperm/.test(tmpfile)) throw createErr('EPERM')
+      if (/nochown/.test(tmpfile)) {
+        throw createErr('ENOCHOWN')
+      }
+      if (/enosys/.test(tmpfile)) {
+        throw createErr('ENOSYS')
+      }
+      if (/einval/.test(tmpfile)) {
+        throw createErr('EINVAL')
+      }
+      if (/eperm/.test(tmpfile)) {
+        throw createErr('EPERM')
+      }
     },
     chmodSync (tmpfile, mode) {
-      if (/nochmod/.test(tmpfile)) throw createErr('ENOCHMOD')
-      if (/enosys/.test(tmpfile)) throw createErr('ENOSYS')
-      if (/einval/.test(tmpfile)) throw createErr('EINVAL')
-      if (/eperm/.test(tmpfile)) throw createErr('EPERM')
+      if (/nochmod/.test(tmpfile)) {
+        throw createErr('ENOCHMOD')
+      }
+      if (/enosys/.test(tmpfile)) {
+        throw createErr('ENOSYS')
+      }
+      if (/einval/.test(tmpfile)) {
+        throw createErr('EINVAL')
+      }
+      if (/eperm/.test(tmpfile)) {
+        throw createErr('EPERM')
+      }
     },
     renameSync (tmpfile, filename) {
-      if (/norename/.test(tmpfile)) throw createErr('ENORENAME')
+      if (/norename/.test(tmpfile)) {
+        throw createErr('ENORENAME')
+      }
     },
     unlinkSync (tmpfile) {
-      if (/nounlink/.test(tmpfile)) throw createErr('ENOUNLINK')
+      if (/nounlink/.test(tmpfile)) {
+        throw createErr('ENOUNLINK')
+      }
       unlinked.push(tmpfile)
     },
     statSync (tmpfile) {
-      if (/nostat/.test(tmpfile)) throw createErr('ENOSTAT')
-    }
-  }
+      if (/nostat/.test(tmpfile)) {
+        throw createErr('ENOSTAT')
+      }
+    },
+  },
 })
 const writeFileAtomicSync = writeFileAtomic.sync
 
-test('getTmpname', t => {
+t.test('getTmpname', t => {
   const getTmpname = writeFileAtomic._getTmpname
   const a = getTmpname('abc.def')
   const b = getTmpname('abc.def')
-  t.notEqual(a, b, 'different invocations of getTmpname get different results')
-  t.done()
+  t.not(a, b, 'different invocations of getTmpname get different results')
+  t.end()
 })
 
-test('cleanupOnExit', t => {
+t.test('cleanupOnExit', t => {
   const file = 'tmpname'
   unlinked = []
   const cleanup = writeFileAtomic._cleanupOnExit(() => file)
   cleanup()
-  t.isDeeply(unlinked, [file], 'cleanup code unlinks')
+  t.strictSame(unlinked, [file], 'cleanup code unlinks')
   const cleanup2 = writeFileAtomic._cleanupOnExit('nounlink')
   t.doesNotThrow(cleanup2, 'exceptions are caught')
   unlinked = []
-  t.done()
+  t.end()
 })
 
-test('async tests', t => {
+t.test('async tests', t => {
   t.plan(2)
 
   expectClose = 0
@@ -148,34 +203,35 @@ test('async tests', t => {
       t.notOk(err)
     })
     writeFileAtomic('noopen', 'test', err => {
-      t.is(err && err.message, 'ENOOPEN', 'fs.open failures propagate')
+      t.equal(err && err.message, 'ENOOPEN', 'fs.open failures propagate')
     })
     writeFileAtomic('nowrite', 'test', err => {
-      t.is(err && err.message, 'ENOWRITE', 'fs.writewrite failures propagate')
+      t.equal(err && err.message, 'ENOWRITE', 'fs.writewrite failures propagate')
     })
     writeFileAtomic('nowrite', Buffer.from('test', 'utf8'), err => {
-      t.is(err && err.message, 'ENOWRITE', 'fs.writewrite failures propagate for buffers')
+      t.equal(err && err.message, 'ENOWRITE', 'fs.writewrite failures propagate for buffers')
     })
     writeFileAtomic('nochown', 'test', { chown: { uid: 100, gid: 100 } }, err => {
-      t.is(err && err.message, 'ENOCHOWN', 'Chown failures propagate')
+      t.equal(err && err.message, 'ENOCHOWN', 'Chown failures propagate')
     })
     writeFileAtomic('nochown', 'test', err => {
       t.notOk(err, 'No attempt to chown when no uid/gid passed in')
     })
     writeFileAtomic('nochmod', 'test', { mode: parseInt('741', 8) }, err => {
-      t.is(err && err.message, 'ENOCHMOD', 'Chmod failures propagate')
+      t.equal(err && err.message, 'ENOCHMOD', 'Chmod failures propagate')
     })
     writeFileAtomic('nofsyncopt', 'test', { fsync: false }, err => {
       t.notOk(err, 'fsync skipped if options.fsync is false')
     })
     writeFileAtomic('norename', 'test', err => {
-      t.is(err && err.message, 'ENORENAME', 'Rename errors propagate')
+      t.equal(err && err.message, 'ENORENAME', 'Rename errors propagate')
     })
     writeFileAtomic('norename nounlink', 'test', err => {
-      t.is(err && err.message, 'ENORENAME', 'Failure to unlink the temp file does not clobber the original error')
+      t.equal(err && err.message, 'ENORENAME',
+        'Failure to unlink the temp file does not clobber the original error')
     })
     writeFileAtomic('nofsync', 'test', err => {
-      t.is(err && err.message, 'ENOFSYNC', 'Fsync failures propagate')
+      t.equal(err && err.message, 'ENOFSYNC', 'Fsync failures propagate')
     })
     writeFileAtomic('enosys', 'test', err => {
       t.notOk(err, 'No errors on ENOSYS')
@@ -210,7 +266,7 @@ test('async tests', t => {
   })
 })
 
-test('sync tests', t => {
+t.test('sync tests', t => {
   t.plan(2)
   closeSyncCalled = 0
   expectCloseSync = 0
@@ -222,13 +278,21 @@ test('sync tests', t => {
 
   const throws = function (t, shouldthrow, msg, todo) {
     let err
-    try { todo() } catch (e) { err = e }
-    t.is(shouldthrow, err && err.message, msg)
+    try {
+      todo()
+    } catch (e) {
+      err = e
+    }
+    t.equal(shouldthrow, err && err.message, msg)
   }
   const noexception = function (t, msg, todo) {
     let err
-    try { todo() } catch (e) { err = e }
-    t.ifError(err, msg)
+    try {
+      todo()
+    } catch (e) {
+      err = e
+    }
+    t.error(err, msg)
   }
   let tmpfile
 
@@ -250,7 +314,7 @@ test('sync tests', t => {
       writeFileAtomicSync('good', 'test', {
         tmpfileCreated (gottmpfile) {
           tmpfile = gottmpfile
-        }
+        },
       })
       t.match(tmpfile, /^good\.\d+$/, 'tmpfileCreated called for success')
     })
@@ -260,16 +324,16 @@ test('sync tests', t => {
       writeFileAtomicSync('noopen', 'test', {
         tmpfileCreated (gottmpfile) {
           tmpfile = gottmpfile
-        }
+        },
       })
     })
-    t.is(tmpfile, undefined, 'tmpfileCreated not called for open failure')
+    t.equal(tmpfile, undefined, 'tmpfileCreated not called for open failure')
 
     throws(t, 'ENOWRITE', 'fs.writeSync failures propagate', () => {
       writeFileAtomicSync('nowrite', 'test', {
         tmpfileCreated (gottmpfile) {
           tmpfile = gottmpfile
-        }
+        },
       })
     })
     t.match(tmpfile, /^nowrite\.\d+$/, 'tmpfileCreated called for failure after open')
@@ -286,9 +350,10 @@ test('sync tests', t => {
     throws(t, 'ENORENAME', 'Rename errors propagate', () => {
       writeFileAtomicSync('norename', 'test')
     })
-    throws(t, 'ENORENAME', 'Failure to unlink the temp file does not clobber the original error', () => {
-      writeFileAtomicSync('norename nounlink', 'test')
-    })
+    throws(t, 'ENORENAME',
+      'Failure to unlink the temp file does not clobber the original error', () => {
+        writeFileAtomicSync('norename nounlink', 'test')
+      })
     throws(t, 'ENOFSYNC', 'Fsync errors propagate', () => {
       writeFileAtomicSync('nofsync', 'test')
     })
@@ -329,7 +394,7 @@ test('sync tests', t => {
   })
 })
 
-test('promises', async t => {
+t.test('promises', async t => {
   let tmpfile
   closeCalled = 0
   expectClose = 0
@@ -342,40 +407,40 @@ test('promises', async t => {
   await writeFileAtomic('good', 'test', {
     tmpfileCreated (gottmpfile) {
       tmpfile = gottmpfile
-    }
+    },
   })
   t.match(tmpfile, /^good\.\d+$/, 'tmpfileCreated is called for success')
 
   await writeFileAtomic('good', 'test', {
     tmpfileCreated (gottmpfile) {
       return Promise.resolve()
-    }
+    },
   })
 
   await t.rejects(writeFileAtomic('good', 'test', {
     tmpfileCreated () {
       return Promise.reject(new Error('reject from tmpfileCreated'))
-    }
+    },
   }))
 
   await t.rejects(writeFileAtomic('good', 'test', {
     tmpfileCreated () {
       throw new Error('throw from tmpfileCreated')
-    }
+    },
   }))
 
   tmpfile = undefined
   await t.rejects(writeFileAtomic('noopen', 'test', {
     tmpfileCreated (gottmpfile) {
       tmpfile = gottmpfile
-    }
+    },
   }))
-  t.is(tmpfile, undefined, 'tmpfileCreated is not called on open failure')
+  t.equal(tmpfile, undefined, 'tmpfileCreated is not called on open failure')
 
   await t.rejects(writeFileAtomic('nowrite', 'test', {
     tmpfileCreated (gottmpfile) {
       tmpfile = gottmpfile
-    }
+    },
   }))
   t.match(tmpfile, /^nowrite\.\d+$/, 'tmpfileCreated is called if failure is after open')
 })
