@@ -1,3 +1,30 @@
+node-write-file-atomic (4.0.2+~4.0.0-2) unstable; urgency=medium
+
+  * Team upload
+  * Update standards version to 4.6.2, no changes needed.
+  * Add patch for node-signal-exit >= 4
+  * Test only during autopkgtest to avoid circular dependency on node-tap
+
+ -- Yadd <yadd@debian.org>  Fri, 18 Aug 2023 07:25:10 +0400
+
+node-write-file-atomic (4.0.2+~4.0.0-1) unstable; urgency=medium
+
+  * Team upload
+  * Declare compliance with policy 4.6.1
+  * Drop dependency to nodejs
+  * New upstream version 4.0.2+~4.0.0
+
+ -- Yadd <yadd@debian.org>  Tue, 30 Aug 2022 18:05:55 +0200
+
+node-write-file-atomic (4.0.1+~4.0.0-1) unstable; urgency=medium
+
+  * Team upload
+  * Fix filenamemangle
+  * New upstream version 4.0.1+~4.0.0
+  * Update docs
+
+ -- Yadd <yadd@debian.org>  Mon, 04 Apr 2022 16:26:44 +0200
+
 node-write-file-atomic (3.0.3+~3.0.2-1) unstable; urgency=medium
 
   * Team upload

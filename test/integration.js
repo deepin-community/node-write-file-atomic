@@ -1,10 +1,9 @@
 'use strict'
 const fs = require('fs')
 const path = require('path')
-const { test } = require('tap')
+const t = require('tap')
 const mkdirp = require('mkdirp')
 const rimraf = require('rimraf')
-const requireInject = require('require-inject')
 
 const workdir = path.join(__dirname, path.basename(__filename, '.js'))
 let testfiles = 0
@@ -12,8 +11,8 @@ function tmpFile () {
   return path.join(workdir, 'test-' + (++testfiles))
 }
 
-function readFile (path) {
-  return fs.readFileSync(path).toString()
+function readFile (p) {
+  return fs.readFileSync(p).toString()
 }
 
 function didWriteFileAtomic (t, expected, filename, data, options, callback) {
@@ -21,277 +20,286 @@ function didWriteFileAtomic (t, expected, filename, data, options, callback) {
     callback = options
     options = null
   }
-  if (!options) options = {}
+  if (!options) {
+    options = {}
+  }
   const actual = {}
-  const writeFileAtomic = requireInject('../index.js', {
+  const writeFileAtomic = t.mock('..', {
     fs: Object.assign({}, fs, {
-      chown (filename, uid, gid, cb) {
+      chown (chownFilename, uid, gid, cb) {
         actual.uid = uid
         actual.gid = gid
         process.nextTick(cb)
       },
-      stat (filename, cb) {
-        fs.stat(filename, (err, stats) => {
-          if (err) return cb(err)
+      stat (statFilename, cb) {
+        fs.stat(statFilename, (err, stats) => {
+          if (err) {
+            return cb(err)
+          }
           cb(null, Object.assign(stats, expected || {}))
         })
-      }
-    })
+      },
+    }),
   })
   return writeFileAtomic(filename, data, options, err => {
-    t.isDeeply(actual, expected, 'ownership is as expected')
+    t.strictSame(actual, expected, 'ownership is as expected')
     callback(err)
   })
 }
 
 function didWriteFileAtomicSync (t, expected, filename, data, options) {
   const actual = {}
-  const writeFileAtomic = requireInject('../index.js', {
+  const writeFileAtomic = t.mock('..', {
     fs: Object.assign({}, fs, {
-      chownSync (filename, uid, gid) {
+      chownSync (chownFilename, uid, gid) {
         actual.uid = uid
         actual.gid = gid
       },
-      statSync (filename) {
-        const stats = fs.statSync(filename)
+      statSync (statFilename) {
+        const stats = fs.statSync(statFilename)
         return Object.assign(stats, expected || {})
-      }
-    })
+      },
+    }),
   })
   writeFileAtomic.sync(filename, data, options)
-  t.isDeeply(actual, expected)
+  t.strictSame(actual, expected)
 }
 
 function currentUser () {
   return {
     uid: process.getuid(),
-    gid: process.getgid()
+    gid: process.getgid(),
   }
 }
 
-test('setup', t => {
+t.test('setup', t => {
   rimraf.sync(workdir)
   mkdirp.sync(workdir)
-  t.done()
+  t.end()
 })
 
-test('writes simple file (async)', t => {
+t.test('writes simple file (async)', t => {
   t.plan(3)
   const file = tmpFile()
   didWriteFileAtomic(t, {}, file, '42', err => {
-    t.ifError(err, 'no error')
-    t.is(readFile(file), '42', 'content ok')
+    t.error(err, 'no error')
+    t.equal(readFile(file), '42', 'content ok')
   })
 })
 
-test('writes simple file with encoding (async)', t => {
+t.test('writes simple file with encoding (async)', t => {
   t.plan(3)
   const file = tmpFile()
   didWriteFileAtomic(t, {}, file, 'foo', 'utf16le', err => {
-    t.ifError(err, 'no error')
-    t.is(readFile(file), 'f\u0000o\u0000o\u0000', 'content ok')
+    t.error(err, 'no error')
+    t.equal(readFile(file), 'f\u0000o\u0000o\u0000', 'content ok')
   })
 })
 
-test('writes buffers to simple file (async)', t => {
+t.test('writes buffers to simple file (async)', t => {
   t.plan(3)
   const file = tmpFile()
   didWriteFileAtomic(t, {}, file, Buffer.from('42'), err => {
-    t.ifError(err, 'no error')
-    t.is(readFile(file), '42', 'content ok')
+    t.error(err, 'no error')
+    t.equal(readFile(file), '42', 'content ok')
   })
 })
 
-test('writes TypedArray to simple file (async)', t => {
+t.test('writes TypedArray to simple file (async)', t => {
   t.plan(3)
   const file = tmpFile()
   didWriteFileAtomic(t, {}, file, new Uint8Array([0x34, 0x32]), err => {
-    t.ifError(err, 'no error')
-    t.is(readFile(file), '42', 'content ok')
+    t.error(err, 'no error')
+    t.equal(readFile(file), '42', 'content ok')
   })
 })
 
-test('writes undefined to simple file (async)', t => {
+t.test('writes undefined to simple file (async)', t => {
   t.plan(3)
   const file = tmpFile()
   didWriteFileAtomic(t, {}, file, undefined, err => {
-    t.ifError(err, 'no error')
-    t.is(readFile(file), '', 'content ok')
+    t.error(err, 'no error')
+    t.equal(readFile(file), '', 'content ok')
   })
 })
 
-test('writes to symlinks without clobbering (async)', t => {
+t.test('writes to symlinks without clobbering (async)', t => {
   t.plan(5)
   const file = tmpFile()
   const link = tmpFile()
   fs.writeFileSync(file, '42')
   fs.symlinkSync(file, link)
   didWriteFileAtomic(t, currentUser(), link, '43', err => {
-    t.ifError(err, 'no error')
-    t.is(readFile(file), '43', 'target content ok')
-    t.is(readFile(link), '43', 'link content ok')
+    t.error(err, 'no error')
+    t.equal(readFile(file), '43', 'target content ok')
+    t.equal(readFile(link), '43', 'link content ok')
     t.ok(fs.lstatSync(link).isSymbolicLink(), 'link is link')
   })
 })
 
-test('runs chown on given file (async)', t => {
+t.test('runs chown on given file (async)', t => {
   const file = tmpFile()
   didWriteFileAtomic(t, { uid: 42, gid: 43 }, file, '42', { chown: { uid: 42, gid: 43 } }, err => {
-    t.ifError(err, 'no error')
-    t.is(readFile(file), '42', 'content ok')
-    t.done()
+    t.error(err, 'no error')
+    t.equal(readFile(file), '42', 'content ok')
+    t.end()
   })
 })
 
-test('writes simple file with no chown (async)', t => {
+t.test('writes simple file with no chown (async)', t => {
   t.plan(3)
   const file = tmpFile()
   didWriteFileAtomic(t, {}, file, '42', { chown: false }, err => {
-    t.ifError(err, 'no error')
-    t.is(readFile(file), '42', 'content ok')
-    t.done()
+    t.error(err, 'no error')
+    t.equal(readFile(file), '42', 'content ok')
+    t.end()
   })
 })
 
-test('runs chmod on given file (async)', t => {
+t.test('runs chmod on given file (async)', t => {
   t.plan(5)
   const file = tmpFile()
   didWriteFileAtomic(t, {}, file, '42', { mode: parseInt('741', 8) }, err => {
-    t.ifError(err, 'no error')
+    t.error(err, 'no error')
     const stat = fs.statSync(file)
-    t.is(stat.mode, parseInt('100741', 8))
-    didWriteFileAtomic(t, { uid: 42, gid: 43 }, file, '23', { chown: { uid: 42, gid: 43 } }, err => {
-      t.ifError(err, 'no error')
-    })
+    t.equal(stat.mode, parseInt('100741', 8))
+    didWriteFileAtomic(t, { uid: 42, gid: 43 }, file, '23',
+      { chown: { uid: 42, gid: 43 } }, chownErr => {
+        t.error(chownErr, 'no error')
+      })
   })
 })
 
-test('run chmod AND chown (async)', t => {
+t.test('run chmod AND chown (async)', t => {
   t.plan(3)
   const file = tmpFile()
-  didWriteFileAtomic(t, { uid: 42, gid: 43 }, file, '42', { mode: parseInt('741', 8), chown: { uid: 42, gid: 43 } }, err => {
-    t.ifError(err, 'no error')
-    const stat = fs.statSync(file)
-    t.is(stat.mode, parseInt('100741', 8))
-  })
+  didWriteFileAtomic(t, { uid: 42, gid: 43 }, file, '42',
+    { mode: parseInt('741', 8), chown: { uid: 42, gid: 43 } }, err => {
+      t.error(err, 'no error')
+      const stat = fs.statSync(file)
+      t.equal(stat.mode, parseInt('100741', 8))
+    })
 })
 
-test('does not change chmod by default (async)', t => {
+t.test('does not change chmod by default (async)', t => {
   t.plan(5)
   const file = tmpFile()
   didWriteFileAtomic(t, {}, file, '42', { mode: parseInt('741', 8) }, err => {
-    t.ifError(err, 'no error')
+    t.error(err, 'no error')
 
-    didWriteFileAtomic(t, currentUser(), file, '43', err => {
-      t.ifError(err, 'no error')
+    didWriteFileAtomic(t, currentUser(), file, '43', writeFileError => {
+      t.error(writeFileError, 'no error')
       const stat = fs.statSync(file)
-      t.is(stat.mode, parseInt('100741', 8))
+      t.equal(stat.mode, parseInt('100741', 8))
     })
   })
 })
 
-test('does not change chown by default (async)', t => {
+t.test('does not change chown by default (async)', t => {
   t.plan(6)
   const file = tmpFile()
-  didWriteFileAtomic(t, { uid: 42, gid: 43 }, file, '42', { chown: { uid: 42, gid: 43 } }, _setModeOnly)
+  didWriteFileAtomic(t, { uid: 42, gid: 43 }, file, '42',
+    { chown: { uid: 42, gid: 43 } }, _setModeOnly)
 
   function _setModeOnly (err) {
-    t.ifError(err, 'no error')
+    t.error(err, 'no error')
 
-    didWriteFileAtomic(t, { uid: 42, gid: 43 }, file, '43', { mode: parseInt('741', 8) }, _allDefault)
+    didWriteFileAtomic(t, { uid: 42, gid: 43 }, file, '43',
+      { mode: parseInt('741', 8) }, _allDefault)
   }
 
   function _allDefault (err) {
-    t.ifError(err, 'no error')
+    t.error(err, 'no error')
 
     didWriteFileAtomic(t, { uid: 42, gid: 43 }, file, '43', _noError)
   }
 
   function _noError (err) {
-    t.ifError(err, 'no error')
+    t.error(err, 'no error')
   }
 })
 
-test('writes simple file (sync)', t => {
+t.test('writes simple file (sync)', t => {
   t.plan(2)
   const file = tmpFile()
   didWriteFileAtomicSync(t, {}, file, '42')
-  t.is(readFile(file), '42')
+  t.equal(readFile(file), '42')
 })
 
-test('writes simple file with encoding (sync)', t => {
+t.test('writes simple file with encoding (sync)', t => {
   t.plan(2)
   const file = tmpFile()
   didWriteFileAtomicSync(t, {}, file, 'foo', 'utf16le')
-  t.is(readFile(file), 'f\u0000o\u0000o\u0000')
+  t.equal(readFile(file), 'f\u0000o\u0000o\u0000')
 })
 
-test('writes simple buffer file (sync)', t => {
+t.test('writes simple buffer file (sync)', t => {
   t.plan(2)
   const file = tmpFile()
   didWriteFileAtomicSync(t, {}, file, Buffer.from('42'))
-  t.is(readFile(file), '42')
+  t.equal(readFile(file), '42')
 })
 
-test('writes simple TypedArray file (sync)', t => {
+t.test('writes simple TypedArray file (sync)', t => {
   t.plan(2)
   const file = tmpFile()
   didWriteFileAtomicSync(t, {}, file, new Uint8Array([0x34, 0x32]))
-  t.is(readFile(file), '42')
+  t.equal(readFile(file), '42')
 })
 
-test('writes undefined file (sync)', t => {
+t.test('writes undefined file (sync)', t => {
   t.plan(2)
   const file = tmpFile()
   didWriteFileAtomicSync(t, {}, file, undefined)
-  t.is(readFile(file), '')
+  t.equal(readFile(file), '')
 })
 
-test('writes to symlinks without clobbering (sync)', t => {
+t.test('writes to symlinks without clobbering (sync)', t => {
   t.plan(4)
   const file = tmpFile()
   const link = tmpFile()
   fs.writeFileSync(file, '42')
   fs.symlinkSync(file, link)
   didWriteFileAtomicSync(t, currentUser(), link, '43')
-  t.is(readFile(file), '43', 'target content ok')
-  t.is(readFile(link), '43', 'link content ok')
+  t.equal(readFile(file), '43', 'target content ok')
+  t.equal(readFile(link), '43', 'link content ok')
   t.ok(fs.lstatSync(link).isSymbolicLink(), 'link is link')
 })
 
-test('runs chown on given file (sync)', t => {
+t.test('runs chown on given file (sync)', t => {
   t.plan(1)
   const file = tmpFile()
   didWriteFileAtomicSync(t, { uid: 42, gid: 43 }, file, '42', { chown: { uid: 42, gid: 43 } })
 })
 
-test('runs chmod on given file (sync)', t => {
+t.test('runs chmod on given file (sync)', t => {
   t.plan(3)
   const file = tmpFile()
   didWriteFileAtomicSync(t, {}, file, '42', { mode: parseInt('741', 8) })
   const stat = fs.statSync(file)
-  t.is(stat.mode, parseInt('100741', 8))
+  t.equal(stat.mode, parseInt('100741', 8))
   didWriteFileAtomicSync(t, { uid: 42, gid: 43 }, file, '23', { chown: { uid: 42, gid: 43 } })
 })
 
-test('runs chown and chmod (sync)', t => {
+t.test('runs chown and chmod (sync)', t => {
   t.plan(2)
   const file = tmpFile()
-  didWriteFileAtomicSync(t, { uid: 42, gid: 43 }, file, '42', { mode: parseInt('741', 8), chown: { uid: 42, gid: 43 } })
+  didWriteFileAtomicSync(t, { uid: 42, gid: 43 }, file, '42',
+    { mode: parseInt('741', 8), chown: { uid: 42, gid: 43 } })
   const stat = fs.statSync(file)
-  t.is(stat.mode, parseInt('100741', 8))
+  t.equal(stat.mode, parseInt('100741', 8))
 })
 
-test('does not change chmod by default (sync)', t => {
+t.test('does not change chmod by default (sync)', t => {
   t.plan(3)
   const file = tmpFile()
   didWriteFileAtomicSync(t, {}, file, '42', { mode: parseInt('741', 8) })
   didWriteFileAtomicSync(t, currentUser(), file, '43')
   const stat = fs.statSync(file)
-  t.is(stat.mode, parseInt('100741', 8))
+  t.equal(stat.mode, parseInt('100741', 8))
 })
 
-test('does not change chown by default (sync)', t => {
+t.test('does not change chown by default (sync)', t => {
   t.plan(3)
   const file = tmpFile()
   didWriteFileAtomicSync(t, { uid: 42, gid: 43 }, file, '42', { chown: { uid: 42, gid: 43 } })
@@ -299,7 +307,7 @@ test('does not change chown by default (sync)', t => {
   didWriteFileAtomicSync(t, { uid: 42, gid: 43 }, file, '44')
 })
 
-test('cleanup', t => {
+t.test('cleanup', t => {
   rimraf.sync(workdir)
-  t.done()
+  t.end()
 })
